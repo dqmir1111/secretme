@@ -474,7 +474,6 @@
   import { getDatabase, ref, set, onValue, remove, update, onDisconnect, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
   import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
-  // ВАШ НОВЫЙ КОНФИГ
   const firebaseConfig = {
     apiKey: "AIzaSyDeUzPDzlNOOjltElDOlPkYTwJVTiki_6s",
     authDomain: "secretme1.firebaseapp.com",
@@ -491,7 +490,6 @@
 
   console.log('✅ Firebase инициализирован');
 
-  // DOM элементы
   const startBtn = document.getElementById('startBtn');
   const nextBtn = document.getElementById('nextBtn');
   const stopBtn = document.getElementById('stopBtn');
@@ -533,7 +531,6 @@
     ]
   };
 
-  // Визуализатор
   function initVisualizer(stream) {
     if (!stream) return;
     stopVisualizer();
@@ -652,17 +649,11 @@
     if (!localUid) return;
     const userStatusRef = ref(db, `status/${localUid}`);
     if (online) {
-      set(userStatusRef, {
-        online: true,
-        lastSeen: serverTimestamp()
-      });
+      set(userStatusRef, { online: true, lastSeen: serverTimestamp() }).catch(e => console.warn('Status error:', e));
       onDisconnect(userStatusRef).remove();
-    } else {
-      remove(userStatusRef);
     }
   }
 
-  // Аутентификация
   onAuthStateChanged(auth, async (user) => {
     if (user) {
       localUid = user.uid;
@@ -672,7 +663,7 @@
       startBtn.disabled = false;
       stopBtn.disabled = false;
     } else {
-      console.log('🔄 Выполняется анонимный вход...');
+      console.log('🔄 Анонимный вход...');
       try { 
         await signInAnonymously(auth); 
       } catch (e) { 
@@ -712,11 +703,12 @@
     
     pc.onicecandidate = (e) => {
       if (e.candidate && roomRef) {
-        set(ref(db, `rooms/${currentRoomId}/candidates/${localUid}`), e.candidate.toJSON());
+        set(ref(db, `rooms/${currentRoomId}/candidates/${localUid}`), e.candidate.toJSON()).catch(()=>{});
       }
     };
     
     pc.oniceconnectionstatechange = () => {
+      console.log('ICE state:', pc.iceConnectionState);
       if (pc.iceConnectionState === 'disconnected' || pc.iceConnectionState === 'failed') {
         setStatus('соединение прервано', 'idle');
         hangup();
@@ -771,13 +763,18 @@
     nextBtn.style.display = 'none';
     
     waitingRef = ref(db, `queues/waiting/${localUid}`);
-    await set(waitingRef, true);
-    console.log('✅ Добавлен в очередь');
+    set(waitingRef, true).then(() => {
+      console.log('✅ Добавлен в очередь');
+    }).catch(e => {
+      console.error('❌ Ошибка добавления в очередь:', e);
+      setStatus('ошибка очереди', 'idle');
+    });
     
     const queueRef = ref(db, 'queues/waiting');
     unsubscribeQueue = onValue(queueRef, async (snapshot) => {
       const waiting = snapshot.val() || {};
       const userIds = Object.keys(waiting);
+      console.log('📋 Очередь:', userIds);
       
       if (!waitingRef) return;
       
@@ -800,11 +797,12 @@
           createdAt: serverTimestamp()
         };
         
-        await set(roomRef, roomData);
-        console.log('✅ Комната создана:', currentRoomId);
+        set(roomRef, roomData).then(() => {
+          console.log('✅ Комната создана:', currentRoomId);
+        });
         
-        await remove(ref(db, `queues/waiting/${localUid}`));
-        await remove(ref(db, `queues/waiting/${otherId}`));
+        remove(ref(db, `queues/waiting/${localUid}`));
+        remove(ref(db, `queues/waiting/${otherId}`));
         waitingRef = null;
         
         setStatus('собеседник найден, установка связи...', 'searching');
@@ -818,18 +816,21 @@
           
           if (data.candidates) {
             Object.entries(data.candidates).forEach(([uid, cand]) => {
-              if (uid !== localUid) pc.addIceCandidate(new RTCIceCandidate(cand)).catch(()=>{});
+              if (uid !== localUid) pc.addIceCandidate(new RTCIceCandidate(cand)).catch(e => console.warn('ICE error:', e));
             });
           }
           
           if (!isInitiator && data.offer && !pc.currentRemoteDescription) {
+            console.log('📥 Получен offer');
             await pc.setRemoteDescription(new RTCSessionDescription(data.offer));
             const answer = await pc.createAnswer();
             await pc.setLocalDescription(answer);
-            await update(roomRef, { answer: { type: answer.type, sdp: answer.sdp } });
+            update(roomRef, { answer: { type: answer.type, sdp: answer.sdp } });
+            console.log('📤 Отправлен answer');
           }
           
           if (isInitiator && data.answer && !pc.currentRemoteDescription) {
+            console.log('📥 Получен answer');
             await pc.setRemoteDescription(new RTCSessionDescription(data.answer));
           }
         });
@@ -837,7 +838,8 @@
         if (isInitiator) {
           const offer = await peerConnection.createOffer();
           await peerConnection.setLocalDescription(offer);
-          await update(roomRef, { offer: { type: offer.type, sdp: offer.sdp } });
+          update(roomRef, { offer: { type: offer.type, sdp: offer.sdp } });
+          console.log('📤 Отправлен offer');
         }
       }
     });
@@ -861,9 +863,8 @@
     setStatus('остановлено', 'idle');
   }
 
-  // Админ панель
   function initAdminPanel() {
-    console.log('👑 Инициализация админ-панели');
+    console.log('👑 Админ-панель');
     const roomsList = document.getElementById('roomsList');
     const activeRoomsCount = document.getElementById('activeRoomsCount');
     const onlineUsersCount = document.getElementById('onlineUsersCount');
@@ -902,11 +903,9 @@
     });
   }
 
-  // Переключение видов
   document.querySelectorAll('.mode-btn').forEach(btn => {
     btn.addEventListener('click', () => {
       const view = btn.dataset.view;
-      
       document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
       
