@@ -337,8 +337,10 @@
   const db = getDatabase(app);
   const auth = getAuth(app);
 
-  console.log('✅ Firebase инициализирован');
+  console.log('🚀 SecretMe запущен');
+  console.log('📁 База данных:', firebaseConfig.databaseURL);
 
+  // DOM элементы
   const startBtn = document.getElementById('startBtn');
   const nextBtn = document.getElementById('nextBtn');
   const stopBtn = document.getElementById('stopBtn');
@@ -378,6 +380,7 @@
     ]
   };
 
+  // Визуализатор
   function initVisualizer(stream) {
     if (!stream) return;
     stopVisualizer();
@@ -415,18 +418,6 @@
         else canvasCtx.lineTo(x, y);
         x += sliceWidth;
       }
-      canvasCtx.stroke();
-      
-      canvasCtx.beginPath();
-      x = 0;
-      for (let i = 0; i < bufferLength; i++) {
-        const v = dataArray[i] / 128.0;
-        const y = canvas.height - (v * canvas.height) / 2;
-        if (i === 0) canvasCtx.moveTo(x, y);
-        else canvasCtx.lineTo(x, y);
-        x += sliceWidth;
-      }
-      canvasCtx.strokeStyle = '#8b5cf6';
       canvasCtx.stroke();
       canvasCtx.shadowBlur = 0;
     }
@@ -491,29 +482,25 @@
 
   micToggle.addEventListener('click', toggleMute);
 
-  function setOnlineStatus(online) {
-    if (!localUid) return;
-    const userStatusRef = ref(db, `status/${localUid}`);
-    if (online) {
-      set(userStatusRef, { online: true, lastSeen: serverTimestamp() });
-      onDisconnect(userStatusRef).remove();
-    }
-  }
-
+  // Аутентификация
   onAuthStateChanged(auth, async (user) => {
     if (user) {
       localUid = user.uid;
-      console.log('✅ Авторизован:', localUid);
-      setOnlineStatus(true);
+      console.log('✅ АВТОРИЗАЦИЯ УСПЕШНА:', localUid);
       setStatus('готов к поиску', 'idle');
       startBtn.disabled = false;
       stopBtn.disabled = false;
+      
+      // Устанавливаем онлайн статус
+      const statusRef = ref(db, `status/${localUid}`);
+      await set(statusRef, { online: true, lastSeen: serverTimestamp() });
+      onDisconnect(statusRef).remove();
     } else {
+      console.log('🔄 Выполняется анонимный вход...');
       try { 
         await signInAnonymously(auth); 
       } catch (e) { 
         console.error('❌ Ошибка входа:', e);
-        setStatus('ошибка входа', 'idle'); 
       }
     }
   });
@@ -531,13 +518,18 @@
   }
 
   function createPeerConnection() {
+    console.log('📞 Создание PeerConnection');
     const pc = new RTCPeerConnection(servers);
+    
     if (localStream) {
-      localStream.getTracks().forEach(t => pc.addTrack(t, localStream));
+      localStream.getTracks().forEach(t => {
+        console.log('🎤 Добавлен трек:', t.kind);
+        pc.addTrack(t, localStream);
+      });
     }
     
     pc.ontrack = (e) => {
-      console.log('🎵 Получен удалённый трек!');
+      console.log('🎵🎵🎵 ПОЛУЧЕН УДАЛЁННЫЙ АУДИОТРЕК!');
       if (e.streams?.[0]) {
         remoteAudio.srcObject = e.streams[0];
         initVisualizer(e.streams[0]);
@@ -548,19 +540,21 @@
     };
     
     pc.onicecandidate = (e) => {
-      if (e.candidate && roomRef) {
-        console.log('🧊 Отправка ICE кандидата');
-        set(ref(db, `rooms/${currentRoomId}/candidates/${localUid}`), e.candidate.toJSON());
+      if (e.candidate) {
+        console.log('🧊 ICE кандидат создан');
+        if (roomRef) {
+          set(ref(db, `rooms/${currentRoomId}/candidates/${localUid}`), e.candidate.toJSON());
+          console.log('📤 ICE кандидат отправлен в Firebase');
+        }
       }
     };
     
     pc.oniceconnectionstatechange = () => {
       console.log('📡 ICE состояние:', pc.iceConnectionState);
       if (pc.iceConnectionState === 'connected') {
-        console.log('✅ WebRTC соединение установлено!');
+        console.log('🎉🎉🎉 WebRTC СОЕДИНЕНИЕ УСТАНОВЛЕНО!');
       }
       if (pc.iceConnectionState === 'disconnected' || pc.iceConnectionState === 'failed') {
-        setStatus('соединение прервано', 'idle');
         hangup();
       }
     };
@@ -569,6 +563,7 @@
   }
 
   function hangup() {
+    console.log('🛑 Завершение разговора');
     if (unsubscribeQueue) { unsubscribeQueue(); unsubscribeQueue = null; }
     if (unsubscribeRoom) { unsubscribeRoom(); unsubscribeRoom = null; }
     if (peerConnection) {
@@ -580,7 +575,6 @@
       roomRef = null;
     }
     currentRoomId = null;
-    isInitiator = false;
     remoteAudio.srcObject = null;
     stopVisualizer();
     stopTimer();
@@ -600,33 +594,45 @@
     await getLocalStream();
     hangup();
     
+    console.log('🔍 НАЧАЛО ПОИСКА');
     setStatus('поиск собеседника...', 'searching');
     startBtn.style.display = 'none';
     nextBtn.style.display = 'none';
     
     waitingRef = ref(db, `queues/waiting/${localUid}`);
-    set(waitingRef, true).then(() => console.log('✅ Добавлен в очередь'));
+    await set(waitingRef, true);
+    console.log('✅ Добавлен в очередь:', localUid);
     
     const queueRef = ref(db, 'queues/waiting');
     unsubscribeQueue = onValue(queueRef, async (snapshot) => {
       const waiting = snapshot.val() || {};
       const userIds = Object.keys(waiting);
-      console.log('📋 Очередь:', userIds);
+      console.log('📋 ОЧЕРЕДЬ ОБНОВЛЕНА:', userIds);
       
-      if (!waitingRef) return;
+      if (!waitingRef) {
+        console.log('⚠️ waitingRef is null');
+        return;
+      }
       
       const otherId = userIds.find(id => id !== localUid);
       if (otherId) {
-        console.log('✅ Найден собеседник:', otherId);
-        if (unsubscribeQueue) { unsubscribeQueue(); unsubscribeQueue = null; }
+        console.log('🎯 НАЙДЕН СОБЕСЕДНИК:', otherId);
+        
+        if (unsubscribeQueue) {
+          unsubscribeQueue();
+          unsubscribeQueue = null;
+        }
         
         currentRoomId = `${localUid}_${otherId}_${Date.now()}`;
         roomRef = ref(db, `rooms/${currentRoomId}`);
         isInitiator = localUid < otherId;
         
+        console.log('🏠 Роль:', isInitiator ? 'ИНИЦИАТОР' : 'ПОЛУЧАТЕЛЬ');
+        
         await set(roomRef, {
           initiator: isInitiator ? localUid : otherId,
-          receiver: isInitiator ? otherId : localUid
+          receiver: isInitiator ? otherId : localUid,
+          createdAt: serverTimestamp()
         });
         console.log('✅ Комната создана:', currentRoomId);
         
@@ -637,11 +643,15 @@
         setStatus('собеседник найден, установка связи...', 'searching');
         peerConnection = createPeerConnection();
         
+        // СЛУШАЕМ КОМНАТУ
+        console.log('👂 Подписка на комнату:', currentRoomId);
         unsubscribeRoom = onValue(roomRef, async (snapshot) => {
           const data = snapshot.val();
+          console.log('📨 ДАННЫЕ КОМНАТЫ:', data ? Object.keys(data) : 'null');
+          
           if (!data || !peerConnection) return;
           
-          // Обработка ICE кандидатов
+          // ICE кандидаты
           if (data.candidates) {
             Object.entries(data.candidates).forEach(([uid, cand]) => {
               if (uid !== localUid) {
@@ -652,27 +662,46 @@
           }
           
           // Если мы НЕ инициатор и есть offer
-          if (!isInitiator && data.offer && !peerConnection.currentRemoteDescription) {
-            console.log('📥 Получен offer, создаю answer');
-            await peerConnection.setRemoteDescription(new RTCSessionDescription(data.offer));
-            const answer = await peerConnection.createAnswer();
-            await peerConnection.setLocalDescription(answer);
-            await update(roomRef, { answer: { type: answer.type, sdp: answer.sdp } });
-            console.log('📤 Отправлен answer');
+          if (!isInitiator && data.offer) {
+            console.log('📥📥📥 ПОЛУЧЕН OFFER!');
+            if (!peerConnection.currentRemoteDescription) {
+              try {
+                await peerConnection.setRemoteDescription(new RTCSessionDescription(data.offer));
+                console.log('✅ Remote description установлен (offer)');
+                
+                const answer = await peerConnection.createAnswer();
+                await peerConnection.setLocalDescription(answer);
+                console.log('✅ Local description установлен (answer)');
+                
+                await update(roomRef, { answer: { type: answer.type, sdp: answer.sdp } });
+                console.log('📤📤📤 ANSWER ОТПРАВЛЕН!');
+              } catch (e) {
+                console.error('❌ Ошибка при обработке offer:', e);
+              }
+            }
           }
           
           // Если мы инициатор и есть answer
-          if (isInitiator && data.answer && !peerConnection.currentRemoteDescription) {
-            console.log('📥 Получен answer, устанавливаю');
-            await peerConnection.setRemoteDescription(new RTCSessionDescription(data.answer));
+          if (isInitiator && data.answer) {
+            console.log('📥📥📥 ПОЛУЧЕН ANSWER!');
+            if (!peerConnection.currentRemoteDescription) {
+              try {
+                await peerConnection.setRemoteDescription(new RTCSessionDescription(data.answer));
+                console.log('✅ Remote description установлен (answer)');
+              } catch (e) {
+                console.error('❌ Ошибка при обработке answer:', e);
+              }
+            }
           }
         });
         
+        // Если мы инициатор — создаём offer
         if (isInitiator) {
+          console.log('📤 Создание offer...');
           const offer = await peerConnection.createOffer();
           await peerConnection.setLocalDescription(offer);
           await update(roomRef, { offer: { type: offer.type, sdp: offer.sdp } });
-          console.log('📤 Отправлен offer');
+          console.log('📤📤📤 OFFER ОТПРАВЛЕН!');
         }
       }
     });
@@ -685,7 +714,6 @@
 
   function stopEverything() {
     hangup();
-    setOnlineStatus(false);
     if (localStream) {
       localStream.getTracks().forEach(t => t.stop());
       localStream = null;
@@ -696,8 +724,8 @@
     setStatus('остановлено', 'idle');
   }
 
+  // Админ панель
   function initAdminPanel() {
-    console.log('👑 Админ-панель');
     const roomsList = document.getElementById('roomsList');
     const activeRoomsCount = document.getElementById('activeRoomsCount');
     const onlineUsersCount = document.getElementById('onlineUsersCount');
@@ -733,6 +761,7 @@
     });
   }
 
+  // Переключение режимов
   document.querySelectorAll('.mode-btn').forEach(btn => {
     btn.addEventListener('click', () => {
       document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
@@ -748,16 +777,7 @@
     });
   });
 
-  startBtn.addEventListener('click', async () => {
-    try {
-      await startSearch();
-      nextBtn.style.display = 'inline-block';
-    } catch (e) {
-      console.error(e);
-      setStatus('ошибка', 'idle');
-    }
-  });
-  
+  startBtn.addEventListener('click', startSearch);
   nextBtn.addEventListener('click', nextPartner);
   stopBtn.addEventListener('click', stopEverything);
 </script>
