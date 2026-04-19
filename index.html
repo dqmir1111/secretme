@@ -3,9 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>Voice — анонимный разговор</title>
+  <title>SecretMe — анонимный разговор</title>
   
-  <!-- Шрифты Playerok-стиля: Inter, без засечек -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,500;14..32,600;14..32,700&display=swap" rel="stylesheet">
@@ -28,7 +27,33 @@
       color: #1c1c28;
     }
 
-    /* Основная карточка — как в Playerok: светлая, скруглённая, тень */
+    .mode-switch {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      display: flex;
+      gap: 8px;
+      z-index: 100;
+    }
+
+    .mode-btn {
+      padding: 8px 16px;
+      border-radius: 30px;
+      border: 1px solid #dde3ea;
+      background: white;
+      font-size: 0.9rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+    }
+
+    .mode-btn.active {
+      background: #1a4cff;
+      color: white;
+      border-color: #1a4cff;
+    }
+
     .card {
       width: 100%;
       max-width: 420px;
@@ -36,11 +61,13 @@
       border-radius: 32px;
       box-shadow: 0 20px 35px -8px rgba(0, 0, 0, 0.07), 0 8px 18px -6px rgba(0, 0, 0, 0.05);
       padding: 28px 24px;
-      transition: all 0.2s ease;
       border: 1px solid rgba(0, 0, 0, 0.02);
     }
 
-    /* Заголовок с иконкой */
+    .admin-card {
+      max-width: 600px;
+    }
+
     .header {
       display: flex;
       align-items: center;
@@ -77,7 +104,6 @@
       color: #5b6c85;
     }
 
-    /* Блок визуализатора */
     .visualizer-wrap {
       background: #f8fafd;
       border-radius: 24px;
@@ -93,7 +119,6 @@
       border-radius: 20px;
     }
 
-    /* Информация о разговоре */
     .call-info {
       display: flex;
       align-items: center;
@@ -144,13 +169,18 @@
       letter-spacing: 0.5px;
     }
 
-    /* Статусная строка */
     .status-row {
       display: flex;
       align-items: center;
-      justify-content: center;
-      gap: 10px;
+      justify-content: space-between;
       margin-bottom: 24px;
+      padding: 0 4px;
+    }
+
+    .status-left {
+      display: flex;
+      align-items: center;
+      gap: 10px;
     }
 
     .indicator {
@@ -183,7 +213,33 @@
       font-size: 0.95rem;
     }
 
-    /* Группа кнопок */
+    .mic-toggle {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: #f1f5f9;
+      padding: 6px 12px;
+      border-radius: 30px;
+      cursor: pointer;
+      transition: all 0.2s;
+      border: 1px solid #e2e8f0;
+    }
+
+    .mic-toggle.muted {
+      background: #fee2e2;
+      border-color: #fecaca;
+    }
+
+    .mic-toggle span {
+      font-size: 0.85rem;
+      font-weight: 500;
+      color: #475569;
+    }
+
+    .mic-toggle.muted span {
+      color: #dc2626;
+    }
+
     .actions {
       display: flex;
       flex-wrap: wrap;
@@ -205,7 +261,6 @@
       cursor: pointer;
       transition: all 0.2s;
       flex: 1 0 130px;
-      backdrop-filter: blur(4px);
     }
 
     .btn-primary {
@@ -218,7 +273,6 @@
     .btn-primary:hover {
       background: #1540db;
       transform: translateY(-2px);
-      box-shadow: 0 14px 22px -10px #1a4cff;
     }
 
     .btn-outline {
@@ -246,70 +300,170 @@
     .btn:disabled {
       opacity: 0.45;
       pointer-events: none;
-      filter: grayscale(0.3);
     }
 
-    .btn:active {
-      transform: translateY(2px);
-      box-shadow: none;
+    .stats-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-bottom: 24px;
     }
 
-    /* Скрытое аудио */
+    .stat-card {
+      background: #f8fafd;
+      border-radius: 20px;
+      padding: 16px;
+      border: 1px solid #eef2f6;
+    }
+
+    .stat-label {
+      font-size: 0.85rem;
+      color: #64748b;
+      margin-bottom: 4px;
+    }
+
+    .stat-value {
+      font-size: 2.2rem;
+      font-weight: 700;
+      color: #0f1825;
+    }
+
+    .rooms-list {
+      max-height: 400px;
+      overflow-y: auto;
+    }
+
+    .room-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px;
+      background: #f8fafd;
+      border-radius: 16px;
+      margin-bottom: 8px;
+      border: 1px solid #eef2f6;
+    }
+
+    .room-id {
+      font-family: monospace;
+      font-size: 0.8rem;
+      color: #475569;
+    }
+
+    .room-users {
+      font-weight: 600;
+      color: #1e293b;
+    }
+
+    .online-badge {
+      background: #22c55e;
+      color: white;
+      padding: 4px 8px;
+      border-radius: 20px;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+
     #remoteAudio {
       display: none;
     }
 
-    /* Адаптив */
     @media (max-width: 480px) {
       .card { padding: 20px 16px; border-radius: 28px; }
       .title { font-size: 1.7rem; }
       .btn { padding: 12px 16px; }
     }
+
+    #adminView {
+      display: none;
+    }
   </style>
 </head>
 <body>
 
-<div class="card">
-  <div class="header">
-    <div class="logo-icon">
-      <!-- иконка микрофона -->
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/>
-        <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
-        <line x1="12" x2="12" y1="19" y2="22"/>
-      </svg>
+<div class="mode-switch">
+  <button class="mode-btn active" data-view="chat">💬 Чат</button>
+  <button class="mode-btn" data-view="admin">👑 Админ</button>
+</div>
+
+<div id="chatView">
+  <div class="card">
+    <div class="header">
+      <div class="logo-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/>
+          <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+          <line x1="12" x2="12" y1="19" y2="22"/>
+        </svg>
+      </div>
+      <div class="title">Secret<span>Me</span></div>
     </div>
-    <div class="title">voice<span>box</span></div>
-  </div>
 
-  <!-- Визуализатор -->
-  <div class="visualizer-wrap">
-    <canvas id="audioVisualizer" width="360" height="54"></canvas>
-  </div>
+    <div class="visualizer-wrap">
+      <canvas id="audioVisualizer" width="360" height="54"></canvas>
+    </div>
 
-  <!-- Информация о собеседнике и таймер -->
-  <div class="call-info">
-    <div class="partner">
-      <div class="avatar" id="partnerAvatar">N</div>
-      <div>
-        <div class="partner-name" id="partnerName">Nekto</div>
-        <div class="partner-status" id="partnerStatus">офлайн</div>
+    <div class="call-info">
+      <div class="partner">
+        <div class="avatar" id="partnerAvatar">N</div>
+        <div>
+          <div class="partner-name" id="partnerName">Nekto</div>
+          <div class="partner-status" id="partnerStatus">офлайн</div>
+        </div>
+      </div>
+      <div class="timer" id="callTimer">00:00</div>
+    </div>
+
+    <div class="status-row">
+      <div class="status-left">
+        <span class="indicator" id="statusDot"></span>
+        <span id="status">подключение...</span>
+      </div>
+      <div class="mic-toggle" id="micToggle">
+        <span>🎤</span>
+        <span id="micText">Вкл</span>
       </div>
     </div>
-    <div class="timer" id="callTimer">00:00</div>
-  </div>
 
-  <!-- Статус -->
-  <div class="status-row">
-    <span class="indicator" id="statusDot"></span>
-    <span id="status">подключение...</span>
+    <div class="actions">
+      <button class="btn btn-primary" id="startBtn" disabled>🔍 Найти</button>
+      <button class="btn btn-outline" id="nextBtn" disabled style="display:none;">Следующий</button>
+      <button class="btn btn-danger" id="stopBtn" disabled>Завершить</button>
+    </div>
   </div>
+</div>
 
-  <!-- Кнопки -->
-  <div class="actions">
-    <button class="btn btn-primary" id="startBtn" disabled>🔍 Найти</button>
-    <button class="btn btn-outline" id="nextBtn" disabled style="display:none;">Следующий</button>
-    <button class="btn btn-danger" id="stopBtn" disabled>Завершить</button>
+<div id="adminView">
+  <div class="card admin-card">
+    <div class="header">
+      <div class="logo-icon" style="background: linear-gradient(145deg, #7c3aed, #6d28d9);">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="3" y="3" width="18" height="18" rx="2"/>
+          <line x1="9" y1="9" x2="15" y2="15"/>
+          <line x1="15" y1="9" x2="9" y2="15"/>
+        </svg>
+      </div>
+      <div class="title">Админ<span>Панель</span></div>
+    </div>
+
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-label">Активных комнат</div>
+        <div class="stat-value" id="activeRoomsCount">0</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Пользователей онлайн</div>
+        <div class="stat-value" id="onlineUsersCount">0</div>
+      </div>
+    </div>
+
+    <div style="margin-bottom: 16px;">
+      <h3 style="font-size: 1.1rem; font-weight: 600; color: #1e293b;">Активные комнаты</h3>
+    </div>
+
+    <div class="rooms-list" id="roomsList">
+      <div style="text-align: center; color: #94a3b8; padding: 20px;">Загрузка...</div>
+    </div>
   </div>
 </div>
 
@@ -317,23 +471,25 @@
 
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-  import { getDatabase, ref, set, onValue, remove, update, onDisconnect } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+  import { getDatabase, ref, set, onValue, remove, update, onDisconnect, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
   import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
-  // Ваша конфигурация
-const firebaseConfig = {
-  apiKey: "AIzaSyDeUzPDzlNOOjltElDOlPkYTwJVTiki_6s",
-  authDomain: "secretme1.firebaseapp.com",
-  projectId: "secretme1",
-  storageBucket: "secretme1.firebasestorage.app",
-  messagingSenderId: "8350375438",
-  appId: "1:8350375438:web:6b1af092ebcd2023bf265f",
-  measurementId: "G-FTJ1K62JSE"
-};
+  // ВАШ НОВЫЙ КОНФИГ
+  const firebaseConfig = {
+    apiKey: "AIzaSyDeUzPDzlNOOjltElDOlPkYTwJVTiki_6s",
+    authDomain: "secretme1.firebaseapp.com",
+    projectId: "secretme1",
+    storageBucket: "secretme1.firebasestorage.app",
+    messagingSenderId: "8350375438",
+    appId: "1:8350375438:web:6b1af092ebcd2023bf265f",
+    measurementId: "G-FTJ1K62JSE"
+  };
 
   const app = initializeApp(firebaseConfig);
   const db = getDatabase(app);
   const auth = getAuth(app);
+
+  console.log('✅ Firebase инициализирован');
 
   // DOM элементы
   const startBtn = document.getElementById('startBtn');
@@ -348,8 +504,9 @@ const firebaseConfig = {
   const partnerStatusEl = document.getElementById('partnerStatus');
   const partnerAvatarEl = document.getElementById('partnerAvatar');
   const timerEl = document.getElementById('callTimer');
+  const micToggle = document.getElementById('micToggle');
+  const micText = document.getElementById('micText');
 
-  // Глобальное состояние
   let localUid = null;
   let localStream = null;
   let peerConnection = null;
@@ -357,14 +514,13 @@ const firebaseConfig = {
   let isInitiator = false;
   let waitingRef = null;
   let roomRef = null;
-  let unsubscribeQueue = null;   // отписка от очереди
-  let unsubscribeRoom = null;    // отписка от комнаты
+  let unsubscribeQueue = null;
+  let unsubscribeRoom = null;
+  let isMuted = false;
   
-  // Таймер разговора
   let callStartTime = null;
   let timerInterval = null;
 
-  // Аудио визуализация
   let audioContext = null;
   let analyser = null;
   let source = null;
@@ -377,7 +533,7 @@ const firebaseConfig = {
     ]
   };
 
-  // ---------- Визуализатор ----------
+  // Визуализатор
   function initVisualizer(stream) {
     if (!stream) return;
     stopVisualizer();
@@ -440,7 +596,6 @@ const firebaseConfig = {
     canvasCtx.clearRect(0, 0, canvas.width, canvas.height);
   }
 
-  // ---------- Обновление UI ----------
   function setStatus(text, type = 'idle') {
     statusDiv.textContent = text;
     statusDot.className = 'indicator';
@@ -448,11 +603,11 @@ const firebaseConfig = {
     if (type === 'searching') statusDot.classList.add('searching');
   }
 
-  function updatePartnerInfo(connected = false, customName = 'Nekto') {
+  function updatePartnerInfo(connected = false) {
     if (connected) {
-      partnerNameEl.textContent = customName;
+      partnerNameEl.textContent = 'Собеседник';
       partnerStatusEl.textContent = 'в сети • разговор';
-      partnerAvatarEl.textContent = customName.charAt(0).toUpperCase();
+      partnerAvatarEl.textContent = 'S';
     } else {
       partnerNameEl.textContent = 'Nekto';
       partnerStatusEl.textContent = 'офлайн';
@@ -460,7 +615,6 @@ const firebaseConfig = {
     }
   }
 
-  // Таймер
   function startTimer() {
     stopTimer();
     callStartTime = Date.now();
@@ -478,25 +632,61 @@ const firebaseConfig = {
     timerEl.textContent = '00:00';
   }
 
-  // ---------- Аутентификация ----------
+  function toggleMute() {
+    if (!localStream) return;
+    isMuted = !isMuted;
+    localStream.getAudioTracks().forEach(track => track.enabled = !isMuted);
+    
+    if (isMuted) {
+      micToggle.classList.add('muted');
+      micText.textContent = 'Выкл';
+    } else {
+      micToggle.classList.remove('muted');
+      micText.textContent = 'Вкл';
+    }
+  }
+
+  micToggle.addEventListener('click', toggleMute);
+
+  function setOnlineStatus(online) {
+    if (!localUid) return;
+    const userStatusRef = ref(db, `status/${localUid}`);
+    if (online) {
+      set(userStatusRef, {
+        online: true,
+        lastSeen: serverTimestamp()
+      });
+      onDisconnect(userStatusRef).remove();
+    } else {
+      remove(userStatusRef);
+    }
+  }
+
+  // Аутентификация
   onAuthStateChanged(auth, async (user) => {
     if (user) {
       localUid = user.uid;
+      console.log('✅ Авторизован:', localUid);
+      setOnlineStatus(true);
       setStatus('готов к поиску', 'idle');
       startBtn.disabled = false;
       stopBtn.disabled = false;
-      onDisconnect(ref(db, `queues/waiting/${localUid}`)).remove();
     } else {
-      try { await signInAnonymously(auth); } 
-      catch (e) { setStatus('ошибка входа', 'idle'); }
+      console.log('🔄 Выполняется анонимный вход...');
+      try { 
+        await signInAnonymously(auth); 
+      } catch (e) { 
+        console.error('❌ Ошибка входа:', e);
+        setStatus('ошибка входа', 'idle'); 
+      }
     }
   });
 
-  // ---------- Медиа ----------
   async function getLocalStream() {
     if (localStream) return localStream;
     try {
       localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+      initVisualizer(localStream);
       return localStream;
     } catch (e) {
       setStatus('нет доступа к микрофону', 'idle');
@@ -509,6 +699,7 @@ const firebaseConfig = {
     if (localStream) {
       localStream.getTracks().forEach(t => pc.addTrack(t, localStream));
     }
+    
     pc.ontrack = (e) => {
       if (e.streams?.[0]) {
         remoteAudio.srcObject = e.streams[0];
@@ -518,23 +709,24 @@ const firebaseConfig = {
         startTimer();
       }
     };
+    
     pc.onicecandidate = (e) => {
       if (e.candidate && roomRef) {
         set(ref(db, `rooms/${currentRoomId}/candidates/${localUid}`), e.candidate.toJSON());
       }
     };
+    
     pc.oniceconnectionstatechange = () => {
       if (pc.iceConnectionState === 'disconnected' || pc.iceConnectionState === 'failed') {
         setStatus('соединение прервано', 'idle');
         hangup();
       }
     };
+    
     return pc;
   }
 
-  // ---------- Очистка и завершение ----------
   function hangup() {
-    // отписываемся от всех слушателей Firebase
     if (unsubscribeQueue) { unsubscribeQueue(); unsubscribeQueue = null; }
     if (unsubscribeRoom) { unsubscribeRoom(); unsubscribeRoom = null; }
     
@@ -542,10 +734,12 @@ const firebaseConfig = {
       peerConnection.close();
       peerConnection = null;
     }
+    
     if (roomRef) {
       remove(roomRef);
       roomRef = null;
     }
+    
     currentRoomId = null;
     isInitiator = false;
     remoteAudio.srcObject = null;
@@ -561,13 +755,16 @@ const firebaseConfig = {
     startBtn.style.display = 'inline-block';
     nextBtn.style.display = 'none';
     setStatus('разговор завершён', 'idle');
+    
+    if (localStream) {
+      initVisualizer(localStream);
+    }
   }
 
-  // ---------- Поиск собеседника (исправленная логика) ----------
   async function startSearch() {
     if (!localUid) return;
     await getLocalStream();
-    hangup(); // гарантированно очищаем предыдущие подписки
+    hangup();
     
     setStatus('поиск собеседника...', 'searching');
     startBtn.style.display = 'none';
@@ -575,20 +772,19 @@ const firebaseConfig = {
     
     waitingRef = ref(db, `queues/waiting/${localUid}`);
     await set(waitingRef, true);
+    console.log('✅ Добавлен в очередь');
     
     const queueRef = ref(db, 'queues/waiting');
-    // Сохраняем функцию отписки
     unsubscribeQueue = onValue(queueRef, async (snapshot) => {
       const waiting = snapshot.val() || {};
       const userIds = Object.keys(waiting);
       
-      // Проверяем, что мы всё ещё в очереди (waitingRef не null)
       if (!waitingRef) return;
       
-      // Ищем другого пользователя
       const otherId = userIds.find(id => id !== localUid);
       if (otherId) {
-        // Немедленно отписываемся от очереди, чтобы избежать повторных срабатываний
+        console.log('✅ Найден собеседник:', otherId);
+        
         if (unsubscribeQueue) {
           unsubscribeQueue();
           unsubscribeQueue = null;
@@ -600,12 +796,13 @@ const firebaseConfig = {
         
         const roomData = {
           initiator: isInitiator ? localUid : otherId,
-          receiver: isInitiator ? otherId : localUid
+          receiver: isInitiator ? otherId : localUid,
+          createdAt: serverTimestamp()
         };
         
         await set(roomRef, roomData);
+        console.log('✅ Комната создана:', currentRoomId);
         
-        // Удаляем обоих из очереди
         await remove(ref(db, `queues/waiting/${localUid}`));
         await remove(ref(db, `queues/waiting/${otherId}`));
         waitingRef = null;
@@ -614,26 +811,24 @@ const firebaseConfig = {
         
         peerConnection = createPeerConnection();
         
-        // Подписываемся на комнату
         unsubscribeRoom = onValue(roomRef, async (roomSnapshot) => {
           const data = roomSnapshot.val();
           if (!data || !peerConnection) return;
           const pc = peerConnection;
           
-          // ICE candidates
           if (data.candidates) {
             Object.entries(data.candidates).forEach(([uid, cand]) => {
               if (uid !== localUid) pc.addIceCandidate(new RTCIceCandidate(cand)).catch(()=>{});
             });
           }
           
-          // Offer / Answer
           if (!isInitiator && data.offer && !pc.currentRemoteDescription) {
             await pc.setRemoteDescription(new RTCSessionDescription(data.offer));
             const answer = await pc.createAnswer();
             await pc.setLocalDescription(answer);
             await update(roomRef, { answer: { type: answer.type, sdp: answer.sdp } });
           }
+          
           if (isInitiator && data.answer && !pc.currentRemoteDescription) {
             await pc.setRemoteDescription(new RTCSessionDescription(data.answer));
           }
@@ -655,6 +850,7 @@ const firebaseConfig = {
 
   function stopEverything() {
     hangup();
+    setOnlineStatus(false);
     if (localStream) {
       localStream.getTracks().forEach(t => t.stop());
       localStream = null;
@@ -665,20 +861,82 @@ const firebaseConfig = {
     setStatus('остановлено', 'idle');
   }
 
-  // ---------- Привязка событий ----------
+  // Админ панель
+  function initAdminPanel() {
+    console.log('👑 Инициализация админ-панели');
+    const roomsList = document.getElementById('roomsList');
+    const activeRoomsCount = document.getElementById('activeRoomsCount');
+    const onlineUsersCount = document.getElementById('onlineUsersCount');
+    
+    const roomsRef = ref(db, 'rooms');
+    onValue(roomsRef, (snapshot) => {
+      const rooms = snapshot.val() || {};
+      const roomIds = Object.keys(rooms);
+      console.log('📊 Комнаты:', roomIds.length);
+      activeRoomsCount.textContent = roomIds.length;
+      
+      if (roomIds.length === 0) {
+        roomsList.innerHTML = '<div style="text-align: center; color: #94a3b8; padding: 20px;">Нет активных комнат</div>';
+      } else {
+        roomsList.innerHTML = roomIds.map(roomId => {
+          const room = rooms[roomId];
+          return `
+            <div class="room-item">
+              <div>
+                <div class="room-id">${roomId.substring(0, 20)}...</div>
+                <div class="room-users">👥 ${room.initiator?.substring(0, 8)}... ↔ ${room.receiver?.substring(0, 8)}...</div>
+              </div>
+              <div class="online-badge">активна</div>
+            </div>
+          `;
+        }).join('');
+      }
+    });
+    
+    const statusRef = ref(db, 'status');
+    onValue(statusRef, (snapshot) => {
+      const statuses = snapshot.val() || {};
+      const onlineCount = Object.keys(statuses).length;
+      console.log('👥 Онлайн:', onlineCount);
+      onlineUsersCount.textContent = onlineCount;
+    });
+  }
+
+  // Переключение видов
+  document.querySelectorAll('.mode-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const view = btn.dataset.view;
+      
+      document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      
+      if (view === 'chat') {
+        document.getElementById('chatView').style.display = 'block';
+        document.getElementById('adminView').style.display = 'none';
+      } else {
+        document.getElementById('chatView').style.display = 'none';
+        document.getElementById('adminView').style.display = 'block';
+        initAdminPanel();
+      }
+    });
+  });
+
   startBtn.addEventListener('click', async () => {
     try {
       await startSearch();
       nextBtn.style.display = 'inline-block';
     } catch (e) {
+      console.error('Ошибка:', e);
       setStatus('ошибка: ' + e.message, 'idle');
       startBtn.style.display = 'inline-block';
     }
   });
+  
   nextBtn.addEventListener('click', nextPartner);
   stopBtn.addEventListener('click', stopEverything);
   
   window.addEventListener('beforeunload', () => {
+    setOnlineStatus(false);
     if (waitingRef) remove(waitingRef);
     if (roomRef) remove(roomRef);
   });
