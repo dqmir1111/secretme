@@ -1,785 +1,518 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>SecretMe — анонимный разговор</title>
-  
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,500;14..32,600;14..32,700&display=swap" rel="stylesheet">
-  
-  <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body {
-      background: #f5f7fb;
-      font-family: 'Inter', sans-serif;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      min-height: 100vh;
-      padding: 16px;
-      color: #1c1c28;
-    }
-    .mode-switch {
-      position: fixed;
-      top: 20px;
-      right: 20px;
-      display: flex;
-      gap: 8px;
-      z-index: 100;
-    }
-    .mode-btn {
-      padding: 8px 16px;
-      border-radius: 30px;
-      border: 1px solid #dde3ea;
-      background: white;
-      font-size: 0.9rem;
-      font-weight: 500;
-      cursor: pointer;
-      transition: all 0.2s;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.03);
-    }
-    .mode-btn.active {
-      background: #1a4cff;
-      color: white;
-      border-color: #1a4cff;
-    }
-    .card {
-      width: 100%;
-      max-width: 420px;
-      background: #ffffff;
-      border-radius: 32px;
-      box-shadow: 0 20px 35px -8px rgba(0, 0, 0, 0.07), 0 8px 18px -6px rgba(0, 0, 0, 0.05);
-      padding: 28px 24px;
-      border: 1px solid rgba(0, 0, 0, 0.02);
-    }
-    .admin-card { max-width: 600px; }
-    .header {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      margin-bottom: 24px;
-    }
-    .logo-icon {
-      width: 48px;
-      height: 48px;
-      background: linear-gradient(145deg, #2563eb, #1d4ed8);
-      border-radius: 18px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      box-shadow: 0 6px 12px -4px rgba(37, 99, 235, 0.2);
-    }
-    .logo-icon svg { width: 28px; height: 28px; color: white; }
-    .title {
-      font-weight: 700;
-      font-size: 1.9rem;
-      letter-spacing: -0.03em;
-      color: #0f1825;
-    }
-    .title span { font-weight: 400; color: #5b6c85; }
-    .visualizer-wrap {
-      background: #f8fafd;
-      border-radius: 24px;
-      padding: 14px 12px;
-      margin-bottom: 20px;
-      border: 1px solid #eef2f6;
-    }
-    canvas {
-      display: block;
-      width: 100%;
-      height: 54px;
-      border-radius: 20px;
-    }
-    .call-info {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-bottom: 16px;
-      padding: 0 4px;
-    }
-    .partner { display: flex; align-items: center; gap: 10px; }
-    .avatar {
-      width: 40px;
-      height: 40px;
-      background: #e6edf8;
-      border-radius: 40px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: #2563eb;
-      font-weight: 600;
-      font-size: 1.1rem;
-    }
-    .partner-name { font-weight: 600; font-size: 1.2rem; color: #1e293b; }
-    .partner-status { font-size: 0.8rem; color: #5f7d9c; margin-top: 2px; }
-    .timer {
-      font-variant-numeric: tabular-nums;
-      font-weight: 600;
-      font-size: 1.3rem;
-      background: #f1f5f9;
-      padding: 6px 14px;
-      border-radius: 40px;
-      color: #0b1e33;
-    }
-    .status-row {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-bottom: 24px;
-      padding: 0 4px;
-    }
-    .status-left { display: flex; align-items: center; gap: 10px; }
-    .indicator {
-      width: 8px;
-      height: 8px;
-      border-radius: 8px;
-      background: #94a3b8;
-    }
-    .indicator.active {
-      background: #22c55e;
-      box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.15);
-    }
-    .indicator.searching {
-      background: #eab308;
-      box-shadow: 0 0 0 3px rgba(234, 179, 8, 0.15);
-      animation: blink 1.5s infinite;
-    }
-    @keyframes blink {
-      0%,100% { opacity: 1; }
-      50% { opacity: 0.5; }
-    }
-    #status { font-weight: 500; color: #415a77; font-size: 0.95rem; }
-    .mic-toggle {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      background: #f1f5f9;
-      padding: 6px 12px;
-      border-radius: 30px;
-      cursor: pointer;
-      border: 1px solid #e2e8f0;
-    }
-    .mic-toggle.muted { background: #fee2e2; border-color: #fecaca; }
-    .mic-toggle span { font-size: 0.85rem; font-weight: 500; color: #475569; }
-    .mic-toggle.muted span { color: #dc2626; }
-    .actions {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 12px;
-      justify-content: center;
-    }
-    .btn {
-      font-family: 'Inter', sans-serif;
-      font-weight: 600;
-      font-size: 1rem;
-      padding: 14px 22px;
-      border-radius: 60px;
-      border: none;
-      background: #ffffff;
-      color: #1e293b;
-      border: 1px solid #dde3ea;
-      cursor: pointer;
-      transition: all 0.2s;
-      flex: 1 0 130px;
-    }
-    .btn-primary {
-      background: #1a4cff;
-      border: 1px solid #1a4cff;
-      color: white;
-    }
-    .btn-primary:hover { background: #1540db; transform: translateY(-2px); }
-    .btn-outline { background: white; border: 1px solid #d0dae8; }
-    .btn-outline:hover { background: #f8faff; border-color: #a0bbd8; }
-    .btn-danger { background: #fff1f0; border-color: #ffcdc7; color: #c01b1b; }
-    .btn:disabled { opacity: 0.45; pointer-events: none; }
-    .stats-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 16px;
-      margin-bottom: 24px;
-    }
-    .stat-card {
-      background: #f8fafd;
-      border-radius: 20px;
-      padding: 16px;
-      border: 1px solid #eef2f6;
-    }
-    .stat-label { font-size: 0.85rem; color: #64748b; margin-bottom: 4px; }
-    .stat-value { font-size: 2.2rem; font-weight: 700; color: #0f1825; }
-    .rooms-list { max-height: 400px; overflow-y: auto; }
-    .room-item {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 12px;
-      background: #f8fafd;
-      border-radius: 16px;
-      margin-bottom: 8px;
-      border: 1px solid #eef2f6;
-    }
-    .online-badge {
-      background: #22c55e;
-      color: white;
-      padding: 4px 8px;
-      border-radius: 20px;
-      font-size: 0.75rem;
-      font-weight: 600;
-    }
-    #remoteAudio { display: none; }
-    #adminView { display: none; }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PetBoom · маркетплейс для питомцев</title>
+    <!-- Firebase SDK (compat) -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+    <!-- Шрифт Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap" rel="stylesheet">
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', sans-serif; }
+        body { background: linear-gradient(145deg, #f9fafc 0%, #f0f2f7 100%); color: #1e1e2a; min-height: 100vh; padding-bottom: 60px; }
+        
+        /* Анимации */
+        @keyframes floatIn { 0% { opacity: 0; transform: translateY(30px) scale(0.98); } 100% { opacity: 1; transform: translateY(0) scale(1); } }
+        @keyframes pulseGlow { 0% { box-shadow: 0 0 0 0 rgba(255, 210, 0, 0.4); } 70% { box-shadow: 0 0 0 10px rgba(255, 210, 0, 0); } 100% { box-shadow: 0 0 0 0 rgba(255, 210, 0, 0); } }
+        @keyframes shake { 0%,100% { transform: translateX(0); } 25% { transform: translateX(-6px); } 75% { transform: translateX(6px); } }
+        
+        header {
+            background: rgba(255,255,255,0.75); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+            padding: 16px 40px; display: flex; justify-content: space-between; align-items: center;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.03); position: sticky; top: 0; z-index: 100;
+            border-bottom: 1px solid rgba(0,0,0,0.02);
+        }
+        .logo {
+            display: flex; align-items: center; font-size: 44px; font-weight: 900; letter-spacing: -1.5px;
+            cursor: pointer; user-select: none; transition: transform 0.3s ease;
+        }
+        .logo:hover { transform: scale(1.02); }
+        .logo .pet { color: #1e1e2a; margin-right: 6px; text-shadow: 2px 2px 0 #FFD20040; }
+        .logo .boom {
+            background: linear-gradient(135deg, #1e1e2a 0%, #2d2d3a 100%);
+            color: #FFD200; padding: 4px 20px; border-radius: 40px;
+            box-shadow: 0 6px 12px rgba(0,0,0,0.1); border: 1px solid #ffffff30;
+        }
+        nav { display: flex; gap: 8px; align-items: center; }
+        .nav-btn {
+            background: transparent; border: none; padding: 12px 22px; border-radius: 60px;
+            font-weight: 600; font-size: 16px; cursor: pointer; transition: all 0.25s;
+            color: #2d2d3a; backdrop-filter: blur(4px);
+        }
+        .nav-btn:hover { background: #ffffffb0; box-shadow: 0 4px 8px rgba(0,0,0,0.05); transform: translateY(-2px); }
+        .admin-btn { background: #1e1e2a; color: #FFD200; box-shadow: 0 6px 14px #1e1e2a30; }
+        .admin-btn:hover { background: #2d2d3a; color: #ffe866; }
+        .user-badge {
+            display: flex; align-items: center; gap: 10px; background: #fff; padding: 6px 16px 6px 12px;
+            border-radius: 60px; font-weight: 500; box-shadow: 0 2px 10px rgba(0,0,0,0.02);
+        }
+
+        .page { display: none; max-width: 1280px; margin: 30px auto; padding: 0 24px; animation: floatIn 0.5s ease; }
+        .page.active { display: block; }
+        
+        h2 { font-size: 32px; margin-bottom: 28px; font-weight: 800; letter-spacing: -0.5px; }
+        .section-title { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+
+        /* Карточки товаров */
+        .products-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 24px; }
+        .product-card {
+            background: #ffffffdd; backdrop-filter: blur(8px); border-radius: 28px; padding: 20px;
+            box-shadow: 0 12px 28px -8px rgba(0,0,0,0.08); transition: all 0.35s cubic-bezier(0.15,0.75,0.4,1);
+            border: 1px solid #ffffff; display: flex; flex-direction: column;
+        }
+        .product-card:hover {
+            transform: translateY(-10px) scale(1.01);
+            box-shadow: 0 28px 40px -12px rgba(0,0,0,0.2); background: #ffffffff;
+            border-color: #FFD20080;
+        }
+        .product-img {
+            width: 100%; height: 170px; background: #f5f5fa; border-radius: 20px;
+            display: flex; align-items: center; justify-content: center; font-size: 56px;
+            margin-bottom: 18px; object-fit: cover; transition: 0.3s;
+        }
+        .product-title { font-size: 18px; font-weight: 700; margin-bottom: 8px; }
+        .product-price { font-size: 26px; font-weight: 800; color: #1e1e2a; margin: 10px 0 18px; }
+        .buy-btn {
+            background: #FFD200; border: none; padding: 14px; border-radius: 18px;
+            font-weight: 800; font-size: 16px; cursor: pointer; transition: 0.25s;
+            box-shadow: 0 4px 10px #FFD20050; margin-top: auto;
+        }
+        .buy-btn:hover { background: #ffda33; transform: scale(0.98); box-shadow: 0 2px 5px #FFD200; }
+
+        /* Админ-панель */
+        .admin-section {
+            background: #ffffffff; border-radius: 28px; padding: 28px; margin-bottom: 28px;
+            box-shadow: 0 12px 30px -8px rgba(0,0,0,0.06); border: 1px solid #ffffff;
+            animation: floatIn 0.4s;
+        }
+        .add-form { display: grid; gap: 18px; max-width: 520px; }
+        .add-form input, .add-form textarea {
+            padding: 16px 20px; border: 1.5px solid #eaeaef; border-radius: 20px;
+            font-size: 16px; outline: none; transition: 0.2s; background: #fafafc;
+        }
+        .add-form input:focus { border-color: #FFD200; background: #fff; box-shadow: 0 0 0 4px #FFD20020; }
+        .btn-submit {
+            background: #1e1e2a; color: #fff; border: none; padding: 16px; border-radius: 20px;
+            font-weight: 700; font-size: 16px; cursor: pointer; transition: all 0.2s;
+        }
+        .btn-submit:hover { background: #2d2d3a; transform: scale(0.98); }
+
+        /* Заказы */
+        .order-card {
+            background: #fff; padding: 22px; border-radius: 22px; margin-bottom: 16px;
+            display: flex; justify-content: space-between; align-items: center;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.02); transition: 0.2s;
+        }
+        .order-card:hover { box-shadow: 0 12px 24px -10px rgba(0,0,0,0.12); }
+        .status-badge { padding: 6px 14px; border-radius: 60px; font-weight: 700; font-size: 13px; }
+        .status-wait { background: #fff3cd; color: #856404; }
+        .status-paid { background: #cfe2ff; color: #084298; }
+        .status-done { background: #d1e7dd; color: #0a3622; }
+        .status-cancel { background: #f8d7da; color: #b02a37; }
+
+        .order-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+        .action-btn {
+            border: none; padding: 10px 18px; border-radius: 14px; font-weight: 600;
+            cursor: pointer; transition: 0.15s; font-size: 14px; background: #f1f3f5;
+        }
+        .action-btn:hover { filter: brightness(0.96); transform: translateY(-2px); }
+
+        /* Модалки */
+        .modal-overlay {
+            display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4);
+            backdrop-filter: blur(8px); z-index: 1000; align-items: center; justify-content: center;
+        }
+        .modal {
+            background: #fff; padding: 36px; border-radius: 44px; width: 90%; max-width: 480px;
+            box-shadow: 0 30px 60px rgba(0,0,0,0.25); animation: floatIn 0.3s;
+        }
+        .pay-methods { display: flex; flex-direction: column; gap: 14px; }
+        .pay-btn {
+            background: #fff; border: 2px solid #e9e9ed; padding: 18px; border-radius: 22px;
+            font-weight: 700; cursor: pointer; transition: 0.2s;
+        }
+        .pay-btn:hover { border-color: #FFD200; background: #fffce6; }
+
+        /* Чат */
+        .chat-box {
+            height: 320px; background: #f6f7f9; border-radius: 28px; padding: 18px;
+            overflow-y: auto; display: flex; flex-direction: column; gap: 10px;
+        }
+        .chat-msg { max-width: 80%; padding: 12px 18px; border-radius: 22px; font-size: 15px; animation: floatIn 0.2s; }
+        .msg-system { background: #ffe9a3; align-self: center; font-size: 13px; border-radius: 30px; }
+        .msg-admin { background: #fff; align-self: flex-start; border-bottom-left-radius: 6px; }
+        .msg-user { background: #FFD200; align-self: flex-end; border-bottom-right-radius: 6px; }
+
+        /* кнопка закрытия */
+        .close-modal {
+            margin-top: 24px; background: none; border: none; color: #7e7e8d;
+            font-weight: 600; cursor: pointer; font-size: 15px;
+        }
+        .login-tabs { display: flex; gap: 10px; margin-bottom: 24px; }
+        .login-tab { flex: 1; padding: 12px; border-radius: 40px; background: #f0f0f5; border: none; font-weight: 600; }
+        .login-tab.active { background: #1e1e2a; color: #FFD200; }
+    </style>
 </head>
 <body>
 
-<div class="mode-switch">
-  <button class="mode-btn active" data-view="chat">💬 Чат</button>
-  <button class="mode-btn" data-view="admin">👑 Админ</button>
-</div>
-
-<div id="chatView">
-  <div class="card">
-    <div class="header">
-      <div class="logo-icon">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/>
-          <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
-          <line x1="12" x2="12" y1="19" y2="22"/>
-        </svg>
-      </div>
-      <div class="title">Secret<span>Me</span></div>
+<header>
+    <div class="logo" onclick="openPage('catalog')">
+        <span class="pet">Pet</span><span class="boom">Boom</span>
     </div>
+    <nav>
+        <button class="nav-btn" onclick="openPage('catalog')">🏠 Каталог</button>
+        <button class="nav-btn" onclick="openPage('orders')">📦 Мои заказы</button>
+        <button class="nav-btn admin-btn" id="adminPanelBtn" style="display: none;" onclick="openPage('admin')">⚙️ Админ</button>
+        <div id="authArea"></div>
+    </nav>
+</header>
 
-    <div class="visualizer-wrap">
-      <canvas id="audioVisualizer" width="360" height="54"></canvas>
-    </div>
+<!-- СТРАНИЦЫ -->
+<main id="page-catalog" class="page active">
+    <div class="section-title"><h2>🐾 Всё для любимцев</h2></div>
+    <div class="products-grid" id="products-container"></div>
+</main>
 
-    <div class="call-info">
-      <div class="partner">
-        <div class="avatar" id="partnerAvatar">N</div>
-        <div>
-          <div class="partner-name" id="partnerName">Nekto</div>
-          <div class="partner-status" id="partnerStatus">офлайн</div>
+<main id="page-orders" class="page">
+    <h2>🧾 История заказов</h2>
+    <div id="userOrdersContainer"></div>
+</main>
+
+<main id="page-admin" class="page">
+    <h2>🛠️ Администрирование</h2>
+    <div class="admin-section">
+        <h3 style="margin-bottom: 22px;">➕ Новый товар</h3>
+        <div class="add-form">
+            <input type="text" id="new-title" placeholder="Название товара">
+            <input type="number" id="new-price" placeholder="Цена (₽)">
+            <input type="text" id="new-emoji" placeholder="Эмодзи (🐕)">
+            <input type="text" id="new-image" placeholder="URL картинки (необязательно)">
+            <button class="btn-submit" onclick="addProductToFirestore()">Опубликовать</button>
         </div>
-      </div>
-      <div class="timer" id="callTimer">00:00</div>
     </div>
+    <div class="admin-section">
+        <h3>📋 Все заказы</h3>
+        <div id="adminOrdersContainer"></div>
+    </div>
+</main>
 
-    <div class="status-row">
-      <div class="status-left">
-        <span class="indicator" id="statusDot"></span>
-        <span id="status">подключение...</span>
-      </div>
-      <div class="mic-toggle" id="micToggle">
-        <span>🎤</span>
-        <span id="micText">Вкл</span>
-      </div>
+<!-- Модалки: вход / регистрация -->
+<div class="modal-overlay" id="authModal">
+    <div class="modal">
+        <div class="login-tabs">
+            <button class="login-tab active" id="tabLogin" onclick="switchAuthTab('login')">Вход</button>
+            <button class="login-tab" id="tabRegister" onclick="switchAuthTab('register')">Регистрация</button>
+        </div>
+        <form id="loginForm" onsubmit="handleLogin(event)">
+            <input type="email" id="loginEmail" placeholder="Email" style="width:100%; padding:16px; border-radius:20px; border:1.5px solid #eaeaef; margin-bottom:15px;" required>
+            <input type="password" id="loginPassword" placeholder="Пароль" style="width:100%; padding:16px; border-radius:20px; border:1.5px solid #eaeaef; margin-bottom:20px;" required>
+            <button type="submit" class="btn-submit" style="width:100%;">Войти</button>
+        </form>
+        <form id="registerForm" onsubmit="handleRegister(event)" style="display:none;">
+            <input type="email" id="regEmail" placeholder="Email" style="width:100%; padding:16px; border-radius:20px; border:1.5px solid #eaeaef; margin-bottom:15px;" required>
+            <input type="password" id="regPassword" placeholder="Пароль (минимум 6 символов)" style="width:100%; padding:16px; border-radius:20px; border:1.5px solid #eaeaef; margin-bottom:20px;" required>
+            <button type="submit" class="btn-submit" style="width:100%;">Зарегистрироваться</button>
+        </form>
+        <button class="close-modal" onclick="closeModal('authModal')">Закрыть</button>
     </div>
-
-    <div class="actions">
-      <button class="btn btn-primary" id="startBtn" disabled>🔍 Найти</button>
-      <button class="btn btn-outline" id="nextBtn" disabled style="display:none;">Следующий</button>
-      <button class="btn btn-danger" id="stopBtn" disabled>Завершить</button>
-    </div>
-  </div>
 </div>
 
-<div id="adminView">
-  <div class="card admin-card">
-    <div class="header">
-      <div class="logo-icon" style="background: linear-gradient(145deg, #7c3aed, #6d28d9);">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <rect x="3" y="3" width="18" height="18" rx="2"/>
-          <line x1="9" y1="9" x2="15" y2="15"/>
-          <line x1="15" y1="9" x2="9" y2="15"/>
-        </svg>
-      </div>
-      <div class="title">Админ<span>Панель</span></div>
+<!-- Модалка оплаты -->
+<div class="modal-overlay" id="payModal">
+    <div class="modal">
+        <h3>💳 Оплата</h3>
+        <p id="payItemName" style="font-size:18px; font-weight:600; margin:10px 0;"></p>
+        <p id="payItemPrice" style="font-size:24px; font-weight:800; margin-bottom:25px;"></p>
+        <div class="pay-methods">
+            <button class="pay-btn" onclick="processPayment('card')">💳 Банковская карта</button>
+            <button class="pay-btn" onclick="processPayment('cash')">💵 Наличные</button>
+            <button class="pay-btn" onclick="processPayment('crypto')">🪙 Криптовалюта (CryptoBot)</button>
+        </div>
+        <button class="close-modal" onclick="closeModal('payModal')">Отмена</button>
     </div>
-
-    <div class="stats-grid">
-      <div class="stat-card">
-        <div class="stat-label">Активных комнат</div>
-        <div class="stat-value" id="activeRoomsCount">0</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-label">Пользователей онлайн</div>
-        <div class="stat-value" id="onlineUsersCount">0</div>
-      </div>
-    </div>
-
-    <h3 style="font-size: 1.1rem; font-weight: 600; color: #1e293b; margin-bottom: 16px;">Активные комнаты</h3>
-    <div class="rooms-list" id="roomsList">
-      <div style="text-align: center; color: #94a3b8; padding: 20px;">Загрузка...</div>
-    </div>
-  </div>
 </div>
 
-<audio id="remoteAudio" autoplay></audio>
+<!-- Чат -->
+<div class="modal-overlay" id="chatModal">
+    <div class="modal" style="max-width:550px;">
+        <h3>💬 Чат по заказу <span id="chatOrderIdDisplay"></span></h3>
+        <div class="chat-box" id="chatMessagesBox"></div>
+        <div style="display:flex; gap:8px; margin-top:15px;">
+            <input type="text" id="chatInput" placeholder="Сообщение..." style="flex:1; padding:14px; border-radius:30px; border:1px solid #ddd;">
+            <button onclick="sendChatMessage()" style="background:#1e1e2a; color:#fff; border:none; padding:0 28px; border-radius:30px; font-weight:700;">➤</button>
+        </div>
+        <button class="close-modal" onclick="closeModal('chatModal'); stopChatListener();">Закрыть</button>
+    </div>
+</div>
 
-<script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-  import { getDatabase, ref, set, onValue, remove, update, onDisconnect, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
-  import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-
-  const firebaseConfig = {
-    apiKey: "AIzaSyDeUzPDzlNOOjltElDOlPkYTwJVTiki_6s",
-    authDomain: "secretme1.firebaseapp.com",
-    projectId: "secretme1",
-    storageBucket: "secretme1.firebasestorage.app",
-    messagingSenderId: "8350375438",
-    appId: "1:8350375438:web:6b1af092ebcd2023bf265f",
-    measurementId: "G-FTJ1K62JSE"
-  };
-
-  const app = initializeApp(firebaseConfig);
-  const db = getDatabase(app);
-  const auth = getAuth(app);
-
-  console.log('🚀 SecretMe запущен');
-  console.log('📁 База данных:', firebaseConfig.databaseURL);
-
-  // DOM элементы
-  const startBtn = document.getElementById('startBtn');
-  const nextBtn = document.getElementById('nextBtn');
-  const stopBtn = document.getElementById('stopBtn');
-  const statusDiv = document.getElementById('status');
-  const statusDot = document.getElementById('statusDot');
-  const remoteAudio = document.getElementById('remoteAudio');
-  const canvas = document.getElementById('audioVisualizer');
-  const canvasCtx = canvas.getContext('2d');
-  const partnerNameEl = document.getElementById('partnerName');
-  const partnerStatusEl = document.getElementById('partnerStatus');
-  const partnerAvatarEl = document.getElementById('partnerAvatar');
-  const timerEl = document.getElementById('callTimer');
-  const micToggle = document.getElementById('micToggle');
-  const micText = document.getElementById('micText');
-
-  let localUid = null;
-  let localStream = null;
-  let peerConnection = null;
-  let currentRoomId = null;
-  let isInitiator = false;
-  let waitingRef = null;
-  let roomRef = null;
-  let unsubscribeQueue = null;
-  let unsubscribeRoom = null;
-  let isMuted = false;
-  let callStartTime = null;
-  let timerInterval = null;
-  let audioContext = null;
-  let analyser = null;
-  let source = null;
-  let animationFrame = null;
-
-  const servers = {
-    iceServers: [
-      { urls: 'stun:stun.l.google.com:19302' },
-      { urls: 'stun:stun1.l.google.com:19302' }
-    ]
-  };
-
-  // Визуализатор
-  function initVisualizer(stream) {
-    if (!stream) return;
-    stopVisualizer();
-    audioContext = new (window.AudioContext || window.webkitAudioContext)();
-    analyser = audioContext.createAnalyser();
-    analyser.fftSize = 256;
-    const bufferLength = analyser.frequencyBinCount;
-    const dataArray = new Uint8Array(bufferLength);
-    source = audioContext.createMediaStreamSource(stream);
-    source.connect(analyser);
-    
-    function draw() {
-      if (!analyser) return;
-      animationFrame = requestAnimationFrame(draw);
-      analyser.getByteFrequencyData(dataArray);
-      canvasCtx.clearRect(0, 0, canvas.width, canvas.height);
-      
-      const gradient = canvasCtx.createLinearGradient(0, 0, canvas.width, 0);
-      gradient.addColorStop(0, '#2563eb');
-      gradient.addColorStop(0.5, '#7c3aed');
-      gradient.addColorStop(1, '#0ea5e9');
-      
-      canvasCtx.lineWidth = 2.8;
-      canvasCtx.strokeStyle = gradient;
-      canvasCtx.shadowBlur = 8;
-      canvasCtx.shadowColor = '#3b82f640';
-      
-      const sliceWidth = canvas.width / bufferLength;
-      let x = 0;
-      canvasCtx.beginPath();
-      for (let i = 0; i < bufferLength; i++) {
-        const v = dataArray[i] / 128.0;
-        const y = (v * canvas.height) / 2;
-        if (i === 0) canvasCtx.moveTo(x, y);
-        else canvasCtx.lineTo(x, y);
-        x += sliceWidth;
-      }
-      canvasCtx.stroke();
-      canvasCtx.shadowBlur = 0;
-    }
-    draw();
-  }
-
-  function stopVisualizer() {
-    if (animationFrame) cancelAnimationFrame(animationFrame);
-    if (audioContext) audioContext.close();
-    audioContext = analyser = source = null;
-    canvasCtx.clearRect(0, 0, canvas.width, canvas.height);
-  }
-
-  function setStatus(text, type = 'idle') {
-    statusDiv.textContent = text;
-    statusDot.className = 'indicator';
-    if (type === 'connected') statusDot.classList.add('active');
-    if (type === 'searching') statusDot.classList.add('searching');
-  }
-
-  function updatePartnerInfo(connected = false) {
-    if (connected) {
-      partnerNameEl.textContent = 'Собеседник';
-      partnerStatusEl.textContent = 'в сети • разговор';
-      partnerAvatarEl.textContent = 'S';
-    } else {
-      partnerNameEl.textContent = 'Nekto';
-      partnerStatusEl.textContent = 'офлайн';
-      partnerAvatarEl.textContent = 'N';
-    }
-  }
-
-  function startTimer() {
-    stopTimer();
-    callStartTime = Date.now();
-    timerInterval = setInterval(() => {
-      const elapsed = Math.floor((Date.now() - callStartTime) / 1000);
-      const mins = Math.floor(elapsed / 60).toString().padStart(2, '0');
-      const secs = (elapsed % 60).toString().padStart(2, '0');
-      timerEl.textContent = `${mins}:${secs}`;
-    }, 500);
-  }
-
-  function stopTimer() {
-    if (timerInterval) clearInterval(timerInterval);
-    timerInterval = null;
-    timerEl.textContent = '00:00';
-  }
-
-  function toggleMute() {
-    if (!localStream) return;
-    isMuted = !isMuted;
-    localStream.getAudioTracks().forEach(track => track.enabled = !isMuted);
-    if (isMuted) {
-      micToggle.classList.add('muted');
-      micText.textContent = 'Выкл';
-    } else {
-      micToggle.classList.remove('muted');
-      micText.textContent = 'Вкл';
-    }
-  }
-
-  micToggle.addEventListener('click', toggleMute);
-
-  // Аутентификация
-  onAuthStateChanged(auth, async (user) => {
-    if (user) {
-      localUid = user.uid;
-      console.log('✅ АВТОРИЗАЦИЯ УСПЕШНА:', localUid);
-      setStatus('готов к поиску', 'idle');
-      startBtn.disabled = false;
-      stopBtn.disabled = false;
-      
-      // Устанавливаем онлайн статус
-      const statusRef = ref(db, `status/${localUid}`);
-      await set(statusRef, { online: true, lastSeen: serverTimestamp() });
-      onDisconnect(statusRef).remove();
-    } else {
-      console.log('🔄 Выполняется анонимный вход...');
-      try { 
-        await signInAnonymously(auth); 
-      } catch (e) { 
-        console.error('❌ Ошибка входа:', e);
-      }
-    }
-  });
-
-  async function getLocalStream() {
-    if (localStream) return localStream;
-    try {
-      localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
-      initVisualizer(localStream);
-      return localStream;
-    } catch (e) {
-      setStatus('нет доступа к микрофону', 'idle');
-      throw e;
-    }
-  }
-
-  function createPeerConnection() {
-    console.log('📞 Создание PeerConnection');
-    const pc = new RTCPeerConnection(servers);
-    
-    if (localStream) {
-      localStream.getTracks().forEach(t => {
-        console.log('🎤 Добавлен трек:', t.kind);
-        pc.addTrack(t, localStream);
-      });
-    }
-    
-    pc.ontrack = (e) => {
-      console.log('🎵🎵🎵 ПОЛУЧЕН УДАЛЁННЫЙ АУДИОТРЕК!');
-      if (e.streams?.[0]) {
-        remoteAudio.srcObject = e.streams[0];
-        initVisualizer(e.streams[0]);
-        setStatus('разговор', 'connected');
-        updatePartnerInfo(true);
-        startTimer();
-      }
+<script>
+    // --- Firebase init ---
+    const firebaseConfig = {
+        apiKey: "AIzaSyDV767I9_I1bUcGuhjhe8XCUdqHj126pPE",
+        authDomain: "petboom12.firebaseapp.com",
+        projectId: "petboom12",
+        storageBucket: "petboom12.firebasestorage.app",
+        messagingSenderId: "127881279305",
+        appId: "1:127881279305:web:4cb988924eaa1661478c98"
     };
-    
-    pc.onicecandidate = (e) => {
-      if (e.candidate) {
-        console.log('🧊 ICE кандидат создан');
-        if (roomRef) {
-          set(ref(db, `rooms/${currentRoomId}/candidates/${localUid}`), e.candidate.toJSON());
-          console.log('📤 ICE кандидат отправлен в Firebase');
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db = firebase.firestore();
+
+    const CRYPTOBOT_TOKEN = '570588:AAX16HT1H6wz058UkCIiuXIBaqdTrUYjyns';
+    const ADMIN_EMAIL = 'dqmjrka@petboom.com'; // доступ только этому email
+
+    let currentUser = null;
+    let unsubscribeChat = null;
+    let currentBuyProduct = null;
+    let currentChatOrderId = null;
+
+    // --- Auth state ---
+    auth.onAuthStateChanged(user => {
+        currentUser = user;
+        updateUIForAuth();
+        if (user) {
+            renderProducts(); 
+            renderUserOrders();
+            if (user.email === ADMIN_EMAIL) {
+                document.getElementById('adminPanelBtn').style.display = 'inline-block';
+            } else {
+                document.getElementById('adminPanelBtn').style.display = 'none';
+            }
+        } else {
+            document.getElementById('adminPanelBtn').style.display = 'none';
+            document.getElementById('products-container').innerHTML = '<p style="padding:20px;">Войдите, чтобы увидеть товары</p>';
         }
-      }
-    };
-    
-    pc.oniceconnectionstatechange = () => {
-      console.log('📡 ICE состояние:', pc.iceConnectionState);
-      if (pc.iceConnectionState === 'connected') {
-        console.log('🎉🎉🎉 WebRTC СОЕДИНЕНИЕ УСТАНОВЛЕНО!');
-      }
-      if (pc.iceConnectionState === 'disconnected' || pc.iceConnectionState === 'failed') {
-        hangup();
-      }
-    };
-    
-    return pc;
-  }
-
-  function hangup() {
-    console.log('🛑 Завершение разговора');
-    if (unsubscribeQueue) { unsubscribeQueue(); unsubscribeQueue = null; }
-    if (unsubscribeRoom) { unsubscribeRoom(); unsubscribeRoom = null; }
-    if (peerConnection) {
-      peerConnection.close();
-      peerConnection = null;
-    }
-    if (roomRef) {
-      remove(roomRef);
-      roomRef = null;
-    }
-    currentRoomId = null;
-    remoteAudio.srcObject = null;
-    stopVisualizer();
-    stopTimer();
-    updatePartnerInfo(false);
-    if (waitingRef) {
-      remove(waitingRef);
-      waitingRef = null;
-    }
-    startBtn.style.display = 'inline-block';
-    nextBtn.style.display = 'none';
-    setStatus('разговор завершён', 'idle');
-    if (localStream) initVisualizer(localStream);
-  }
-
-  async function startSearch() {
-    if (!localUid) return;
-    await getLocalStream();
-    hangup();
-    
-    console.log('🔍 НАЧАЛО ПОИСКА');
-    setStatus('поиск собеседника...', 'searching');
-    startBtn.style.display = 'none';
-    nextBtn.style.display = 'none';
-    
-    waitingRef = ref(db, `queues/waiting/${localUid}`);
-    await set(waitingRef, true);
-    console.log('✅ Добавлен в очередь:', localUid);
-    
-    const queueRef = ref(db, 'queues/waiting');
-    unsubscribeQueue = onValue(queueRef, async (snapshot) => {
-      const waiting = snapshot.val() || {};
-      const userIds = Object.keys(waiting);
-      console.log('📋 ОЧЕРЕДЬ ОБНОВЛЕНА:', userIds);
-      
-      if (!waitingRef) {
-        console.log('⚠️ waitingRef is null');
-        return;
-      }
-      
-      const otherId = userIds.find(id => id !== localUid);
-      if (otherId) {
-        console.log('🎯 НАЙДЕН СОБЕСЕДНИК:', otherId);
-        
-        if (unsubscribeQueue) {
-          unsubscribeQueue();
-          unsubscribeQueue = null;
+        if (document.getElementById('page-admin').classList.contains('active') && (!user || user.email !== ADMIN_EMAIL)) {
+            openPage('catalog');
         }
-        
-        currentRoomId = `${localUid}_${otherId}_${Date.now()}`;
-        roomRef = ref(db, `rooms/${currentRoomId}`);
-        isInitiator = localUid < otherId;
-        
-        console.log('🏠 Роль:', isInitiator ? 'ИНИЦИАТОР' : 'ПОЛУЧАТЕЛЬ');
-        
-        await set(roomRef, {
-          initiator: isInitiator ? localUid : otherId,
-          receiver: isInitiator ? otherId : localUid,
-          createdAt: serverTimestamp()
-        });
-        console.log('✅ Комната создана:', currentRoomId);
-        
-        await remove(ref(db, `queues/waiting/${localUid}`));
-        await remove(ref(db, `queues/waiting/${otherId}`));
-        waitingRef = null;
-        
-        setStatus('собеседник найден, установка связи...', 'searching');
-        peerConnection = createPeerConnection();
-        
-        // СЛУШАЕМ КОМНАТУ
-        console.log('👂 Подписка на комнату:', currentRoomId);
-        unsubscribeRoom = onValue(roomRef, async (snapshot) => {
-          const data = snapshot.val();
-          console.log('📨 ДАННЫЕ КОМНАТЫ:', data ? Object.keys(data) : 'null');
-          
-          if (!data || !peerConnection) return;
-          
-          // ICE кандидаты
-          if (data.candidates) {
-            Object.entries(data.candidates).forEach(([uid, cand]) => {
-              if (uid !== localUid) {
-                console.log('🧊 Получен ICE кандидат от', uid);
-                peerConnection.addIceCandidate(new RTCIceCandidate(cand)).catch(e => console.warn('ICE error:', e));
-              }
+    });
+
+    function updateUIForAuth() {
+        const area = document.getElementById('authArea');
+        if (currentUser) {
+            area.innerHTML = `<div class="user-badge"><span>👤 ${currentUser.email.split('@')[0]}</span><button class="nav-btn" style="padding:6px 12px;" onclick="logout()">Выйти</button></div>`;
+        } else {
+            area.innerHTML = `<button class="nav-btn" onclick="openAuthModal()">🔐 Войти</button>`;
+        }
+    }
+
+    function openAuthModal() { document.getElementById('authModal').style.display = 'flex'; }
+    function closeModal(id) { document.getElementById(id).style.display = 'none'; }
+    function logout() { auth.signOut(); openPage('catalog'); }
+
+    function switchAuthTab(type) {
+        document.getElementById('loginForm').style.display = type==='login'?'block':'none';
+        document.getElementById('registerForm').style.display = type==='register'?'block':'none';
+        document.getElementById('tabLogin').classList.toggle('active', type==='login');
+        document.getElementById('tabRegister').classList.toggle('active', type==='register');
+    }
+
+    async function handleLogin(e) {
+        e.preventDefault();
+        const email = document.getElementById('loginEmail').value;
+        const pass = document.getElementById('loginPassword').value;
+        try { await auth.signInWithEmailAndPassword(email, pass); closeModal('authModal'); }
+        catch(err) { alert('Ошибка: ' + err.message); }
+    }
+    async function handleRegister(e) {
+        e.preventDefault();
+        const email = document.getElementById('regEmail').value;
+        const pass = document.getElementById('regPassword').value;
+        if (pass.length < 6) { alert('Пароль минимум 6 символов'); return; }
+        try { await auth.createUserWithEmailAndPassword(email, pass); closeModal('authModal'); }
+        catch(err) { alert('Ошибка: ' + err.message); }
+    }
+
+    // --- Навигация ---
+    function openPage(page) {
+        document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+        document.getElementById('page-'+page).classList.add('active');
+        if (page === 'catalog' && currentUser) renderProducts();
+        if (page === 'orders' && currentUser) renderUserOrders();
+        if (page === 'admin' && currentUser && currentUser.email === ADMIN_EMAIL) renderAdminOrders();
+    }
+
+    // --- Товары Firestore ---
+    async function renderProducts() {
+        const container = document.getElementById('products-container');
+        container.innerHTML = '<p>Загрузка...</p>';
+        try {
+            const snapshot = await db.collection('products').get();
+            container.innerHTML = '';
+            snapshot.forEach(doc => {
+                const p = doc.data();
+                container.innerHTML += `
+                    <div class="product-card">
+                        <div class="product-img">${p.emoji || '📦'}</div>
+                        ${p.imageUrl ? `<img src="${p.imageUrl}" style="width:100%; height:140px; object-fit:cover; border-radius:18px; margin-bottom:10px;">` : ''}
+                        <div class="product-title">${p.title}</div>
+                        <div class="product-price">${p.price} ₽</div>
+                        <button class="buy-btn" onclick="openPayModal('${doc.id}')">Купить</button>
+                    </div>
+                `;
             });
-          }
-          
-          // Если мы НЕ инициатор и есть offer
-          if (!isInitiator && data.offer) {
-            console.log('📥📥📥 ПОЛУЧЕН OFFER!');
-            if (!peerConnection.currentRemoteDescription) {
-              try {
-                await peerConnection.setRemoteDescription(new RTCSessionDescription(data.offer));
-                console.log('✅ Remote description установлен (offer)');
-                
-                const answer = await peerConnection.createAnswer();
-                await peerConnection.setLocalDescription(answer);
-                console.log('✅ Local description установлен (answer)');
-                
-                await update(roomRef, { answer: { type: answer.type, sdp: answer.sdp } });
-                console.log('📤📤📤 ANSWER ОТПРАВЛЕН!');
-              } catch (e) {
-                console.error('❌ Ошибка при обработке offer:', e);
-              }
-            }
-          }
-          
-          // Если мы инициатор и есть answer
-          if (isInitiator && data.answer) {
-            console.log('📥📥📥 ПОЛУЧЕН ANSWER!');
-            if (!peerConnection.currentRemoteDescription) {
-              try {
-                await peerConnection.setRemoteDescription(new RTCSessionDescription(data.answer));
-                console.log('✅ Remote description установлен (answer)');
-              } catch (e) {
-                console.error('❌ Ошибка при обработке answer:', e);
-              }
-            }
-          }
-        });
-        
-        // Если мы инициатор — создаём offer
-        if (isInitiator) {
-          console.log('📤 Создание offer...');
-          const offer = await peerConnection.createOffer();
-          await peerConnection.setLocalDescription(offer);
-          await update(roomRef, { offer: { type: offer.type, sdp: offer.sdp } });
-          console.log('📤📤📤 OFFER ОТПРАВЛЕН!');
-        }
-      }
-    });
-  }
-
-  async function nextPartner() {
-    hangup();
-    await startSearch();
-  }
-
-  function stopEverything() {
-    hangup();
-    if (localStream) {
-      localStream.getTracks().forEach(t => t.stop());
-      localStream = null;
+            if (snapshot.empty) container.innerHTML = '<p>Товары пока не добавлены</p>';
+        } catch(e) { container.innerHTML = '<p>Ошибка загрузки</p>'; }
     }
-    stopVisualizer();
-    startBtn.style.display = 'inline-block';
-    nextBtn.style.display = 'none';
-    setStatus('остановлено', 'idle');
-  }
 
-  // Админ панель
-  function initAdminPanel() {
-    const roomsList = document.getElementById('roomsList');
-    const activeRoomsCount = document.getElementById('activeRoomsCount');
-    const onlineUsersCount = document.getElementById('onlineUsersCount');
-    
-    onValue(ref(db, 'rooms'), (snapshot) => {
-      const rooms = snapshot.val() || {};
-      const roomIds = Object.keys(rooms);
-      activeRoomsCount.textContent = roomIds.length;
-      
-      if (roomIds.length === 0) {
-        roomsList.innerHTML = '<div style="text-align: center; color: #94a3b8; padding: 20px;">Нет активных комнат</div>';
-      } else {
-        roomsList.innerHTML = roomIds.map(roomId => {
-          const room = rooms[roomId];
-          return `
-            <div class="room-item">
-              <div>
-                <div style="font-family: monospace; font-size: 0.8rem;">${roomId.substring(0, 25)}...</div>
-                <div style="font-size: 0.85rem; margin-top: 4px;">
-                  👤 ${room.initiator?.substring(0, 8)}... ↔ ${room.receiver?.substring(0, 8)}...
-                </div>
-              </div>
-              <div class="online-badge">активна</div>
-            </div>
-          `;
-        }).join('');
-      }
-    });
-    
-    onValue(ref(db, 'status'), (snapshot) => {
-      const statuses = snapshot.val() || {};
-      onlineUsersCount.textContent = Object.keys(statuses).filter(uid => statuses[uid]?.online).length;
-    });
-  }
+    async function addProductToFirestore() {
+        if (!currentUser || currentUser.email !== ADMIN_EMAIL) return;
+        const title = document.getElementById('new-title').value;
+        const price = parseInt(document.getElementById('new-price').value);
+        const emoji = document.getElementById('new-emoji').value || '🛍️';
+        const imageUrl = document.getElementById('new-image').value;
+        if (!title || !price) { alert('Заполните название и цену'); return; }
+        try {
+            await db.collection('products').add({ title, price, emoji, imageUrl, createdAt: firebase.firestore.FieldValue.serverTimestamp() });
+            alert('Товар добавлен');
+            document.getElementById('new-title').value = document.getElementById('new-price').value = document.getElementById('new-emoji').value = document.getElementById('new-image').value = '';
+            renderProducts();
+        } catch(e) { alert('Ошибка: '+e); }
+    }
 
-  // Переключение режимов
-  document.querySelectorAll('.mode-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-      if (btn.dataset.view === 'chat') {
-        document.getElementById('chatView').style.display = 'block';
-        document.getElementById('adminView').style.display = 'none';
-      } else {
-        document.getElementById('chatView').style.display = 'none';
-        document.getElementById('adminView').style.display = 'block';
-        initAdminPanel();
-      }
-    });
-  });
+    // --- Заказы ---
+    function openPayModal(productId) {
+        if (!currentUser) { alert('Войдите в аккаунт'); return; }
+        db.collection('products').doc(productId).get().then(doc => {
+            currentBuyProduct = { id: doc.id, ...doc.data() };
+            document.getElementById('payItemName').innerText = currentBuyProduct.title;
+            document.getElementById('payItemPrice').innerText = currentBuyProduct.price + ' ₽';
+            document.getElementById('payModal').style.display = 'flex';
+        });
+    }
 
-  startBtn.addEventListener('click', startSearch);
-  nextBtn.addEventListener('click', nextPartner);
-  stopBtn.addEventListener('click', stopEverything);
+    async function processPayment(method) {
+        closeModal('payModal');
+        const order = {
+            userId: currentUser.uid,
+            userEmail: currentUser.email,
+            productId: currentBuyProduct.id,
+            productTitle: currentBuyProduct.title,
+            price: currentBuyProduct.price,
+            method,
+            status: method === 'crypto' ? 'wait_payment' : 'wait',
+            createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        };
+        try {
+            const docRef = await db.collection('orders').add(order);
+            const orderId = docRef.id;
+            alert(`✅ Заказ #${orderId.slice(-6)} создан!`);
+
+            if (method === 'crypto') {
+                // создаём инвойс в CryptoBot
+                const response = await fetch(`https://pay.crypt.bot/api/createInvoice`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Crypto-Pay-API-Token': CRYPTOBOT_TOKEN },
+                    body: JSON.stringify({
+                        asset: 'USDT',
+                        amount: currentBuyProduct.price.toString(),
+                        description: `Оплата заказа ${orderId.slice(-6)} - ${currentBuyProduct.title}`,
+                        hidden_message: `OrderID: ${orderId}`,
+                        paid_btn_name: 'openChannel',
+                        paid_btn_url: 'https://t.me/petboom_support'
+                    })
+                });
+                const data = await response.json();
+                if (data.ok) {
+                    const invoiceUrl = data.result.bot_invoice_url;
+                    window.open(invoiceUrl, '_blank');
+                    // обновим статус после оплаты через вебхук (здесь упрощённо)
+                    alert('Ссылка на оплату открыта. После оплаты статус обновится автоматически.');
+                    // имитация проверки статуса: оставим как wait_payment
+                } else {
+                    alert('Ошибка создания счета: ' + JSON.stringify(data));
+                }
+            }
+            renderUserOrders();
+            if (currentUser.email === ADMIN_EMAIL) renderAdminOrders();
+        } catch(e) { alert('Ошибка создания заказа: '+e); }
+    }
+
+    async function renderUserOrders() {
+        const cont = document.getElementById('userOrdersContainer');
+        if (!currentUser) { cont.innerHTML = '<p>Войдите для просмотра</p>'; return; }
+        cont.innerHTML = '<p>Загрузка...</p>';
+        const snap = await db.collection('orders').where('userId', '==', currentUser.uid).orderBy('createdAt', 'desc').get();
+        cont.innerHTML = '';
+        snap.forEach(doc => {
+            const o = doc.data();
+            cont.innerHTML += orderCardHTML(doc.id, o);
+        });
+        if (snap.empty) cont.innerHTML = '<p>У вас пока нет заказов</p>';
+    }
+
+    async function renderAdminOrders() {
+        const cont = document.getElementById('adminOrdersContainer');
+        cont.innerHTML = '<p>Загрузка...</p>';
+        const snap = await db.collection('orders').orderBy('createdAt', 'desc').get();
+        cont.innerHTML = '';
+        snap.forEach(doc => cont.innerHTML += orderCardHTML(doc.id, doc.data(), true));
+        if (snap.empty) cont.innerHTML = '<p>Нет заказов</p>';
+    }
+
+    function orderCardHTML(orderId, o, isAdmin = false) {
+        let statusBadge = '';
+        if (o.status === 'wait') statusBadge = '<span class="status-badge status-wait">Ожидает</span>';
+        else if (o.status === 'done') statusBadge = '<span class="status-badge status-done">Выполнен</span>';
+        else if (o.status === 'cancel') statusBadge = '<span class="status-badge status-cancel">Отменён</span>';
+        else if (o.status === 'wait_payment') statusBadge = '<span class="status-badge status-paid">Ожидает оплаты</span>';
+        const actions = isAdmin ? `
+            <button class="action-btn" onclick="openChat('${orderId}', 'admin')">💬 Чат</button>
+            ${o.status !== 'done' ? `<button class="action-btn" onclick="updateOrderStatus('${orderId}', 'done')">✔ Выполнить</button>` : ''}
+            ${o.status !== 'cancel' ? `<button class="action-btn" onclick="updateOrderStatus('${orderId}', 'cancel')">✖ Отменить</button>` : ''}
+        ` : `<button class="action-btn" onclick="openChat('${orderId}', 'user')">💬 Чат с поддержкой</button>`;
+        return `<div class="order-card">
+            <div><b>${o.productTitle}</b> · ${o.price}₽<br>${o.userEmail} · ${o.method}<br>${statusBadge}</div>
+            <div class="order-actions">${actions}</div>
+        </div>`;
+    }
+
+    async function updateOrderStatus(orderId, newStatus) {
+        await db.collection('orders').doc(orderId).update({ status: newStatus });
+        renderAdminOrders();
+    }
+
+    // --- Чат на Firestore ---
+    function openChat(orderId, role) {
+        currentChatOrderId = orderId;
+        document.getElementById('chatOrderIdDisplay').innerText = orderId.slice(-6);
+        const box = document.getElementById('chatMessagesBox');
+        box.innerHTML = '<div class="chat-msg msg-system">Загрузка сообщений...</div>';
+        document.getElementById('chatModal').style.display = 'flex';
+        if (unsubscribeChat) unsubscribeChat();
+        unsubscribeChat = db.collection('chats').doc(orderId).collection('messages').orderBy('timestamp').onSnapshot(snap => {
+            box.innerHTML = '';
+            snap.forEach(msgDoc => {
+                const m = msgDoc.data();
+                const cls = m.sender === 'admin' ? 'msg-admin' : (m.sender === 'system' ? 'msg-system' : 'msg-user');
+                box.innerHTML += `<div class="chat-msg ${cls}"><b>${m.senderName || 'Система'}:</b> ${m.text}</div>`;
+            });
+            box.scrollTop = box.scrollHeight;
+        });
+    }
+
+    async function sendChatMessage() {
+        const input = document.getElementById('chatInput');
+        const text = input.value.trim();
+        if (!text || !currentChatOrderId) return;
+        const sender = (currentUser.email === ADMIN_EMAIL) ? 'admin' : 'user';
+        const senderName = sender === 'admin' ? 'Админ' : (currentUser.email.split('@')[0]);
+        await db.collection('chats').doc(currentChatOrderId).collection('messages').add({
+            text, sender, senderName, timestamp: firebase.firestore.FieldValue.serverTimestamp()
+        });
+        input.value = '';
+    }
+
+    function stopChatListener() { if (unsubscribeChat) { unsubscribeChat(); unsubscribeChat = null; } }
+
+    // инициализация
+    window.onload = () => { if (currentUser) renderProducts(); };
 </script>
 </body>
 </html>
